@@ -1,0 +1,19 @@
+name: text_processor
+channels:
+  - pytorch
+dependencies:
+  - python=3.9
+  - pytorch
+  - torchvision
+  - torchaudio
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - unidecode
+  - sentencepiece
+  - protobuf
+  - pip
+  - pip:
+    - transformers
