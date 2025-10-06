@@ -7,7 +7,7 @@ ID_COLUMN = "rownum"  # Replace with your actual ID column name
 INPUT_COLUMN = "field7"  # Replace with your actual column name
 OUTPUT_COLUMN = "anonymized_text"  # Replace with your actual result column name
 SCORE_COLUMN = "anonymized_score"  # Replace with your actual score column name
-
+WARNING_COLUMN = "anonymization_warnings"  # Replace with your actual warning column name
 printing = True  # Global variable to control printing
 
 
@@ -23,7 +23,7 @@ def run_anonymize_for_db():
     update_cursor = conn.cursor()
 
     query_text = f"SELECT {ID_COLUMN}, {INPUT_COLUMN} FROM {TABLE_NAME} WHERE {INPUT_COLUMN} is not null and {INPUT_COLUMN} != '-'"
-    query_text += f" and {ID_COLUMN} >= 3001 and {ID_COLUMN} <= 3101"
+    query_text += f" and {ID_COLUMN} >= 600 and {ID_COLUMN} <= 2600"
 
     query_row_count = "SELECT COUNT(*) FROM ({})".format(query_text)
     select_cursor.execute(query_row_count)
@@ -55,14 +55,22 @@ def run_anonymize_for_db():
         processed_rows += 1
 
         if len(detected_words) > 0:
+
+            # turn unique detected_words and word_types into comma-separated strings
+            warning_detected_types = ', '.join(set(word_types))
+            warning_detected_words = ', '.join(set(detected_words))
+
+            # combied warning message
+            warning_message = f"{warning_detected_types}: {warning_detected_words}"
+
             if printing:
                 print(f"Detected words: {detected_words}")
                 print(f"Redacted words: {redacted_words}")
                 print(f"Word types: {word_types}")
 
             # Update the database with the redacted text
-            update_query = f"UPDATE {TABLE_NAME} SET {OUTPUT_COLUMN} = ?, {SCORE_COLUMN} = ? WHERE {ID_COLUMN} = ?"
-            update_cursor.execute(update_query, (redacted_text, len(detected_words), row_id))
+            update_query = f"UPDATE {TABLE_NAME} SET {OUTPUT_COLUMN} = ?, {SCORE_COLUMN} = ?, {WARNING_COLUMN} = ? WHERE {ID_COLUMN} = ?"
+            update_cursor.execute(update_query, (redacted_text, len(detected_words), warning_message, row_id))
             updated_rows += 1
         else:
             if printing:

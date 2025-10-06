@@ -51,7 +51,7 @@ class TextProcessor:
                 if result['entity'] not in ['B-DATE', 'I-DATE'] and len(result['word']) < 4:  # Skip short words except in dates
                     continue
 
-                if result['word'] in ['.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']:
+                if result['word'] in ['vuoden', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']:
                     continue
 
                 if redacted_line.find(result['word']) == -1:
@@ -59,9 +59,12 @@ class TextProcessor:
 
                 redacted_word = f"*{result['entity']}*"
                 pattern = re.escape(result['word'])
-                redacted_line = re.sub(pattern, redacted_word, redacted_line, flags=re.IGNORECASE)
+
+                if result['entity'] in ['B-DATE', 'I-DATE']:
+                    redacted_line = re.sub(pattern, redacted_word, redacted_line, flags=re.IGNORECASE)
+                    redacted_words.append(redacted_word)
+
                 detected_words.append(result['word'])
-                redacted_words.append(redacted_word)
                 word_types.append(result['entity'])
         return redacted_line, detected_words, redacted_words, word_types
 
