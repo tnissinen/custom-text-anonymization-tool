@@ -29,24 +29,36 @@ class TextProcessor:
         return text
 
     def replace_emails(self, text):
+        found_strings = []
+
+        found_strings.extend(re.findall(self.email_pattern, text))
+
         # Replace email addresses with a placeholder
-        return self.email_pattern.sub('--**email**--', text) #Change as per your needs
+        return self.email_pattern.sub('*R-EMAIL*', text), found_strings
 
     def replace_finnish_ssn(self, text):
+
+        found_strings = []
+        found_strings.extend(re.findall(self.ssn_pattern, text))
+
         # Replace Finnish SSNs with a placeholder
-        return self.ssn_pattern.sub('--**hetu**--', text) #Change as per your needs
+        return self.ssn_pattern.sub('*R-HETU*', text), found_strings
 
     def replace_dates_regex(self, text):
         date_patterns = [
-            r'\b\d{1,2}\.\d{1,2}\.\d{2,4}\b',  # 12.3.2022, 1.5.21
+            r'\b\d{1,2}\.\d{1,2}\.?\d{2,4}?\b',  # 12.3.2022, 1.5.21, 12.3 2022
+            r'\b\d{1,2}\.\d{1,2}\b',  # 12.3 2022
             r'\b\d{4}-\d{2}-\d{2}\b',  # 2021-10-15
-            r'\b\d{6}\b',  # 211015
-            r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'  # 15/10/2021
+            r'\b\d{6,8}\b',  # 211015
+            r'\b\d{1,2}/\d{2,4}\b',  # 15/10/2021, 15/10/21
+            r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'  # 15/10/2021, 15/10/21
         ]
+        found_dates = []
         for pat in date_patterns:
-            text = re.sub(pat, '*M-DATE*', text)
+            found_dates.extend(re.findall(pat, text))
+            text = re.sub(pat, '*R-DATE*', text)
 
-        return text
+        return text, found_dates
 
     def redact_names(self, line):
         # Redact names and other entities using the NLP pipeline
@@ -54,8 +66,20 @@ class TextProcessor:
         redacted_words = []
         word_types = []
         processed_line = self.preprocess_text(line)
-        redacted_line = self.replace_emails(processed_line)
-        redacted_line = self.replace_finnish_ssn(redacted_line)
+        redacted_line, found_emails = self.replace_emails(processed_line)
+        redacted_line, found_ssns = self.replace_finnish_ssn(redacted_line)
+
+        for found_email in found_emails:
+            if found_email not in detected_words:
+                detected_words.append(found_email)
+                redacted_words.append('*R-EMAIL*')
+                word_types.append('R-EMAIL')
+
+        for found_ssn in found_ssns:
+            if found_ssn not in detected_words:
+                detected_words.append(found_ssn)
+                redacted_words.append('*R-HETU*')
+                word_types.append('R-HETU')
 
         for result in self.get_nlp()(redacted_line):
             if result['entity'] in ['B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-DATE', 'I-DATE']: #list can be customized.
@@ -79,7 +103,13 @@ class TextProcessor:
                 detected_words.append(result['word'])
                 word_types.append(result['entity'])
 
-        redacted_line = self.replace_dates_regex(redacted_line)
+        redacted_line, found_dates = self.replace_dates_regex(redacted_line)
+
+        for found_date in found_dates:
+            if found_date not in detected_words:
+                detected_words.append(found_date)
+                redacted_words.append('*R-DATE*')
+                word_types.append('R-DATE')
 
         return redacted_line, detected_words, redacted_words, word_types
 

@@ -11,19 +11,29 @@ WARNING_COLUMN = "anonymization_warnings"  # Replace with your actual warning co
 printing = True  # Global variable to control printing
 
 
-def run_anonymize_for_db():
+def run_anonymize_for_db(input_column=None):
     global printing
+
+    if input_column is None or input_column == "":
+        input_column = INPUT_COLUMN
+        output_column = OUTPUT_COLUMN
+        score_column = SCORE_COLUMN
+        warning_column = WARNING_COLUMN
+    else:
+        output_column = f"{input_column}_anon"
+        score_column = f"{input_column}_anon_score"
+        warning_column = f"{input_column}_anon_info"
 
     print(f"Running anonymize to db: {DB_PATH}")
 
-    print(f"Table: {TABLE_NAME}, input column: {INPUT_COLUMN}, output column: {OUTPUT_COLUMN}, score column: {SCORE_COLUMN}")
+    print(f"Table: {TABLE_NAME}, input column: {input_column}, output column: {output_column}, score column: {score_column}")
 
     conn = sqlite3.connect(DB_PATH)
     select_cursor = conn.cursor()
     update_cursor = conn.cursor()
 
-    query_text = f"SELECT {ID_COLUMN}, {INPUT_COLUMN} FROM {TABLE_NAME} WHERE {INPUT_COLUMN} is not null and {INPUT_COLUMN} != '-'"
-    query_text += f" and {ID_COLUMN} >= 600 and {ID_COLUMN} <= 2600"
+    query_text = f"SELECT {ID_COLUMN}, {input_column} FROM {TABLE_NAME} WHERE {input_column} is not null and {input_column} != '-'"
+    query_text += f" and {ID_COLUMN} >= 0 and {ID_COLUMN} <= 100000"
 
     query_row_count = "SELECT COUNT(*) FROM ({})".format(query_text)
     select_cursor.execute(query_row_count)
@@ -69,7 +79,7 @@ def run_anonymize_for_db():
                 print(f"Word types: {word_types}")
 
             # Update the database with the redacted text
-            update_query = f"UPDATE {TABLE_NAME} SET {OUTPUT_COLUMN} = ?, {SCORE_COLUMN} = ?, {WARNING_COLUMN} = ? WHERE {ID_COLUMN} = ?"
+            update_query = f"UPDATE {TABLE_NAME} SET {output_column} = ?, {score_column} = ?, {warning_column} = ? WHERE {ID_COLUMN} = ?"
             update_cursor.execute(update_query, (redacted_text, len(detected_words), warning_message, row_id))
             updated_rows += 1
         else:
@@ -93,3 +103,7 @@ def run_anonymize_for_db():
 
 if __name__ == '__main__':
     run_anonymize_for_db()
+    #run_anonymize_for_db("report1")
+    #run_anonymize_for_db("request1")
+    #run_anonymize_for_db("report2")
+    #run_anonymize_for_db("request2")
