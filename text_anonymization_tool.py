@@ -36,6 +36,18 @@ class TextProcessor:
         # Replace Finnish SSNs with a placeholder
         return self.ssn_pattern.sub('--**hetu**--', text) #Change as per your needs
 
+    def replace_dates_regex(self, text):
+        date_patterns = [
+            r'\b\d{1,2}\.\d{1,2}\.\d{2,4}\b',  # 12.3.2022, 1.5.21
+            r'\b\d{4}-\d{2}-\d{2}\b',  # 2021-10-15
+            r'\b\d{6}\b',  # 211015
+            r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'  # 15/10/2021
+        ]
+        for pat in date_patterns:
+            text = re.sub(pat, '*M-DATE*', text)
+
+        return text
+
     def redact_names(self, line):
         # Redact names and other entities using the NLP pipeline
         detected_words = []
@@ -66,6 +78,9 @@ class TextProcessor:
 
                 detected_words.append(result['word'])
                 word_types.append(result['entity'])
+
+        redacted_line = self.replace_dates_regex(redacted_line)
+
         return redacted_line, detected_words, redacted_words, word_types
 
     def process_text_file(self, filename):

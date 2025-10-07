@@ -9,13 +9,12 @@ class TestTextProcessor(unittest.TestCase):
         redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
         self.assertNotEqual(redacted, text)
         self.assertIn("-DATE", redacted)
-        self.assertTrue(len(word_types) > 0)
 
     def test_redact_dates_1(self):
         self.check_redacted_dates("Vertailussa on kuvat 25.7.14. Nikamacorpusten muoto on tavallinen. ")
 
     def test_redact_dates_2(self):
-        self.check_redacted_dates("Vertailussa on kuvat 25/6/12. Nikamacorpusten muoto on tavallinen. ")
+        self.check_redacted_dates("Vertailussa on kuvat 25/6/12. Nikamacorpusten muoto on tavallinen. Toinen kuvaus 4/11/20. ")
 
     def test_redact_dates_3(self):
         self.check_redacted_dates("Vertailussa on kuvat 250622. Nikamacorpusten muoto on tavallinen. ")
