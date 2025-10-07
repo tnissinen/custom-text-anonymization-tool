@@ -90,7 +90,7 @@ class TextProcessor:
                 if result['word'] in ['vuoden', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']:
                     continue
 
-                if redacted_line.find(result['word']) == -1:
+                if redacted_line.lower().find(result['word']) == -1:
                     continue
 
                 redacted_word = f"*{result['entity']}*"
