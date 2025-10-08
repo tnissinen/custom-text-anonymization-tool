@@ -45,6 +45,12 @@ class TestTextProcessor(unittest.TestCase):
         self.assertEqual(word_types, [])
 
     def test_redact_names_without_names_3(self):
+        text = "Sternumin haavainfektio keuhkotubin hoidossa. Kyseessä 78-vuotias mies. P.k. kontrolli thorax CT. "
+        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        self.assertEqual(redacted, text)
+        self.assertEqual(detected, [])
+
+    def test_redact_names_without_names_4(self):
         text = "Uudisluun muodostusta ei nivelen reunoissa ole korkeintaan hienoista terävöitymistä. Molemmin puolin trochanter majorin alueella on jänneinsertioiden alueella kalkkia entesiitti-tyyppisesti. SI-nivelet vaikuttavat avoimilta"
         redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
         self.assertEqual(redacted, text)
