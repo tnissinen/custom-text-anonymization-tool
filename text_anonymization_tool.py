@@ -15,6 +15,29 @@ class TextProcessor:
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
         self.ssn_pattern = re.compile(r'\b\d{2}\d{2}\d{2}[-+A]\d{3}[0-9A-FHJKLMNPRSTUVWXY]\b', re.I)
 
+        self.date_patterns = [
+            # 12.3.2022, 1.5.21, 12.3.2022 (dot-separated)
+            r'\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\.?(?:\d{2,4})?\b',
+            # 12.3 (dot-separated, no year)
+            r'\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\b',
+            # 2021-10-15 (ISO-style, year-month-day)
+            r'\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b',
+            # 211015 or 20211015 (compact numeric date)
+            # Matches yymmdd or yyyymmdd — limited by plausible ranges
+            r'\b(?:(?:\d{2})(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01])|(?:\d{4})(?:0[1-9]|1[0-2])(?:0[1-9]|[12][0-9]|3[01]))\b',
+            # 15/10 or 15/10/2021, 5/1/21 (slash-separated)
+            r'\b(?:0?[1-9]|[12][0-9]|3[01])/(?:0?[1-9]|1[0-2])(?:/\d{2,4})?\b',
+        ]
+
+        date_patterns_old = [
+            r'\b\d{1,2}\.\d{1,2}\.?\d{2,4}?\b',  # 12.3.2022, 1.5.21, 12.3 2022
+            r'\b\d{1,2}\.\d{1,2}\b',  # 12.3 2022
+            r'\b\d{4}-\d{2}-\d{2}\b',  # 2021-10-15
+            r'\b\d{6,8}\b',  # 211015
+            r'\b\d{1,2}/\d{2,4}\b',  # 15/10/2021, 15/10/21
+            r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'  # 15/10/2021, 15/10/21
+        ]
+
     def get_nlp(self):
         # Initialize the NLP pipeline if not already done
         if self.nlp is None:
@@ -45,14 +68,7 @@ class TextProcessor:
         return self.ssn_pattern.sub('*R-HETU*', text), found_strings
 
     def replace_dates_regex(self, text):
-        date_patterns = [
-            r'\b\d{1,2}\.\d{1,2}\.?\d{2,4}?\b',  # 12.3.2022, 1.5.21, 12.3 2022
-            r'\b\d{1,2}\.\d{1,2}\b',  # 12.3 2022
-            r'\b\d{4}-\d{2}-\d{2}\b',  # 2021-10-15
-            r'\b\d{6,8}\b',  # 211015
-            r'\b\d{1,2}/\d{2,4}\b',  # 15/10/2021, 15/10/21
-            r'\b\d{1,2}/\d{1,2}/\d{2,4}\b'  # 15/10/2021, 15/10/21
-        ]
+        date_patterns = self.date_patterns
         found_dates = []
         for pat in date_patterns:
             found_dates.extend(re.findall(pat, text))
