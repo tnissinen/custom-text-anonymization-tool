@@ -5,6 +5,8 @@ from unidecode import unidecode
 
 # Define the base path variable
 base_path = "C:/Users/tomni/PycharmProjects/custom-text-anonymization-tool/"
+IGNORE_WORD_LIST = ['vuoden', 'thor', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
+SIMPLE_TAGS = True
 
 class TextProcessor:
     def __init__(self):
@@ -57,7 +59,7 @@ class TextProcessor:
         found_strings.extend(re.findall(self.email_pattern, text))
 
         # Replace email addresses with a placeholder
-        return self.email_pattern.sub('*R-EMAIL*', text), found_strings
+        return self.email_pattern.sub('*EMAIL*', text), found_strings
 
     def replace_finnish_ssn(self, text):
 
@@ -65,14 +67,18 @@ class TextProcessor:
         found_strings.extend(re.findall(self.ssn_pattern, text))
 
         # Replace Finnish SSNs with a placeholder
-        return self.ssn_pattern.sub('*R-HETU*', text), found_strings
+        return self.ssn_pattern.sub('*HETU*', text), found_strings
 
     def replace_dates_regex(self, text):
         date_patterns = self.date_patterns
         found_dates = []
         for pat in date_patterns:
             found_dates.extend(re.findall(pat, text))
-            text = re.sub(pat, '*R-DATE*', text)
+
+            if SIMPLE_TAGS:
+                text = re.sub(pat, '*DATE*', text)
+            else:
+                text = re.sub(pat, '*R-DATE*', text)
 
         return text, found_dates
 
@@ -103,7 +109,7 @@ class TextProcessor:
                 if result['entity'] not in ['B-DATE', 'I-DATE'] and len(result['word']) < 4:  # Skip short words except in dates
                     continue
 
-                if result['word'] in ['vuoden', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']:
+                if result['word'] in IGNORE_WORD_LIST:
                     continue
 
                 if redacted_line.lower().find(result['word']) == -1:
@@ -112,9 +118,18 @@ class TextProcessor:
                 redacted_word = f"*{result['entity']}*"
                 pattern = re.escape(result['word'])
 
-                if result['entity'] in ['B-DATE', 'I-DATE']:
-                    redacted_line = re.sub(pattern, redacted_word, redacted_line, flags=re.IGNORECASE)
-                    redacted_words.append(redacted_word)
+                #if result['entity'] in ['B-DATE', 'I-DATE']:
+                redacted_words.append(redacted_word)
+
+                if SIMPLE_TAGS:
+                    # replace all date tags with a simple *DATE* tag
+                    if result['entity'] in ['B-DATE', 'I-DATE']:
+                        redacted_word = '*DATE*'
+                    # replace all other tags with a simple *NAME* tag
+                    else:
+                        redacted_word = '*NAME*'
+
+                redacted_line = re.sub(pattern, redacted_word, redacted_line, flags=re.IGNORECASE)
 
                 detected_words.append(result['word'])
                 word_types.append(result['entity'])
