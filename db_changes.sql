@@ -24,8 +24,8 @@ ALTER TABLE Lausunnot_10000 ADD COLUMN rownum INTEGER;
 
 -- Step 2: Populate the column with row numbers
 WITH cte AS (
-  SELECT ROW_NUMBER() OVER (ORDER BY PseudoID) AS rownum, PseudoID
+  SELECT ROW_NUMBER() OVER (ORDER BY PseudoID) AS rownum, rowid
   FROM Lausunnot_10000
 )
 UPDATE Lausunnot_10000
-SET rownum = (SELECT rownum FROM cte WHERE cte.PseudoID = Lausunnot_10000.PseudoID);
+SET rownum = (SELECT rownum FROM cte WHERE cte.rowid = Lausunnot_10000.rowid);

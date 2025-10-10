@@ -6,7 +6,7 @@ class TestTextProcessor(unittest.TestCase):
         self.processor = TextProcessor()
 
     def check_redacted_dates(self, text):
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertNotEqual(redacted, text)
         self.assertIn("-DATE", redacted)
 
@@ -21,7 +21,7 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_with_names(self):
         text = "Lausuttavana on kuvat Janne Markkasen tutkimuksesta."
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
 
         detected_lower = [d.lower() for d in detected]
         self.assertIn("janne", detected_lower)
@@ -30,7 +30,7 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_without_names_1(self):
         text = "No personal information here."
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, text)
         self.assertEqual(detected, [])
         self.assertEqual(redacted_words, [])
@@ -38,7 +38,7 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_without_names_2(self):
         text = "Ei vertailututkimuksia PACS:issa. Glenohumeraalinivel säännöllinen. Subakromiaalitila on jonkin verran madaltunut kiertäjäkalvosimen problematiikkaan viitaten."
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, text)
         self.assertEqual(detected, [])
         self.assertEqual(redacted_words, [])
@@ -46,13 +46,13 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_without_names_3(self):
         text = "Sternumin haavainfektio keuhkotubin hoidossa. Kyseessä 78-vuotias mies. P.k. kontrolli thorax CT. Verenpaine matala 50/80. Ei kuumetta."
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, text)
         self.assertEqual(detected, [])
 
     def test_redact_names_without_names_4(self):
         text = "Uudisluun muodostusta ei nivelen reunoissa ole korkeintaan hienoista terävöitymistä. Molemmin puolin trochanter majorin alueella on jänneinsertioiden alueella kalkkia entesiitti-tyyppisesti. SI-nivelet vaikuttavat avoimilta"
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, text)
         self.assertEqual(detected, [])
         self.assertEqual(redacted_words, [])
@@ -60,7 +60,7 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_empty_string(self):
         text = ""
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, "")
         self.assertEqual(detected, [])
         self.assertEqual(redacted_words, [])
@@ -68,7 +68,7 @@ class TestTextProcessor(unittest.TestCase):
 
     def test_redact_names_basic(self):
         text = "Potilas 1: Nimi: Matti Meikäläinen, Syntymäaika: 12.05.1980, Sähköposti: matti.meikalainen@example.com, Hetu: 120580-123A, Osoite: Katu 1, Helsinki, Diagnoosi: Diabetes, Historia: Potilas on ollut diabeteksen hoidossa 10 vuotta. Verensokeritasot ovat olleet hyvin hallinnassa insuliinihoidolla. Verotiedot: Tulot: 50,000€, Veronumero: 123456789"
-        redacted, detected, redacted_words, word_types = self.processor.redact_names(text)
+        redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertNotEqual(redacted, text)
 
         self.assertIn("matti", [d.lower() for d in detected])

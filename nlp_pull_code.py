@@ -2,7 +2,7 @@ from transformers import pipeline, AutoModelForTokenClassification, AutoTokenize
 from transformers import MBartForConditionalGeneration, MBart50TokenizerFast
 
 # Define the folder path for saving models and tokenizers
-folder_on_save = 'C:/Users/tomni/PycharmProjects/custom-text-anonymization-tool/'
+folder_on_save = 'C:/Users/tomin/PycharmProjects/custom-text-anonymization-tool/'
 
 # Define full paths for each model and tokenizer
 full_path_01 = folder_on_save + 'iguanodon-ai/bert-base-finnish-uncased-ner'
