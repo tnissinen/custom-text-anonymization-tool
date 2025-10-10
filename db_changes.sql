@@ -29,3 +29,8 @@ WITH cte AS (
 )
 UPDATE Lausunnot_10000
 SET rownum = (SELECT rownum FROM cte WHERE cte.rowid = Lausunnot_10000.rowid);
+
+create table Lausunnot_Xray_CT_export as select * from Lausunnot_Xray_CT;
+create table Lausunnot_10000_export as select * from Lausunnot_10000;
+
+update Lausunnot_Xray_CT_export set PseudoID = 'EXCLUDED';

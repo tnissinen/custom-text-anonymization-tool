@@ -4,7 +4,7 @@ from transformers import pipeline, AutoTokenizer, AutoModelForTokenClassificatio
 from unidecode import unidecode
 
 base_path = "C:/Users/tomin/PycharmProjects/custom-text-anonymization-tool/"
-IGNORE_WORD_LIST = ['vuoden', 'thor', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
+IGNORE_WORD_LIST = ['vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
 SIMPLE_TAGS = True
 
 
@@ -41,7 +41,7 @@ class TextProcessor:
     def get_nlp(self):
         """ Initialize the NLP pipeline if not already done"""
         if self.nlp is None:
-            self.nlp = pipeline("ner", model=base_path + "iguanodon-ai/bert-base-finnish-uncased-ner")  # aggregation_strategy= simple, first, average or max
+            self.nlp = pipeline("ner", model=base_path + "iguanodon-ai/bert-base-finnish-uncased-ner", aggregation_strategy='max')  # aggregation_strategy= simple, first, average or max
         return self.nlp
 
     def preprocess_text(self, text):
@@ -145,35 +145,45 @@ class TextProcessor:
         # 4. Use NLP model to identify and redact named entities
         nlp_results = self.get_nlp()(redacted_line)
 
+        orig_redacted_line = redacted_line  # Keep the original line for reference
+
         for result in nlp_results:
 
             # Only consider specific entity types for redaction
-            if result['entity'] in ['B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-DATE', 'I-DATE']:
+            if result['entity_group'] in ['B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-DATE', 'I-DATE', 'DATE', 'PER', 'ORG', 'LOC']:
 
                 # Skip short words that are not dates (they are likely not names)
-                if result['entity'] not in ['B-DATE', 'I-DATE'] and len(result['word']) < 4:
+                if result['entity_group'] not in ['B-DATE', 'I-DATE', 'DATE'] and len(result['word']) < 4:
                     continue
 
                 # Skip words in the ignore list
                 if result['word'] in IGNORE_WORD_LIST:
                     continue
 
-                # Skip if the word is not found in the current redacted line (case insensitive) TODO: is this needed?
+                # get orig word based on start and end positions
+                orig_word = orig_redacted_line[result['start']:result['end']]
+
+                # Skip if the word is not found in the current redacted line (case insensitive) --> means it was already redacted by regex
                 if redacted_line.lower().find(result['word']) == -1:
-                    print(f"!!!!!!Skipping word not found in line: {result['word']}")
-                    continue
+
+                    if orig_word.lower() == result['word'].lower():  # not because of case or äöå
+                        continue
 
                 # Create the redacted word based on the entity type
-                redacted_word = f"*{result['entity']}*"
+                redacted_word = f"*{result['entity_group']}*"
                 redacted_words.append(redacted_word)
 
                 # Escape special characters in the word for regex replacement
-                pattern_for_replacement = re.escape(result['word'])
+                pattern_for_replacement = r'\b' + re.escape(result['word']) + r'\b'
+
+                if orig_word.lower() != result['word'].lower():
+                    pattern_for_replacement = r'\b' + re.escape(orig_word) + r'\b'
+                    print(f"!!!!!!Using orig word for replacement: {orig_word} instead of {result['word']}")
 
                 if SIMPLE_TAGS:
 
                     # replace all date tags with a simple *DATE* tag
-                    if result['entity'] in ['B-DATE', 'I-DATE']:
+                    if result['entity_group'] in ['B-DATE', 'I-DATE', 'DATE']:
                         redacted_word = '*DATE*'
                     # replace all other tags with a simple *NAME* tag
                     else:
@@ -183,7 +193,7 @@ class TextProcessor:
                 redacted_line = re.sub(pattern_for_replacement, redacted_word, redacted_line, flags=re.IGNORECASE)
 
                 detected_words.append(result['word'])
-                word_types.append(result['entity'])
+                word_types.append(result['entity_group'])
 
         # 5. Replace specific difficult names
         redacted_line, found_difficult_names = self.replace_difficult_names(redacted_line)
