@@ -6,6 +6,7 @@ from unidecode import unidecode
 base_path = "C:/Users/tomin/PycharmProjects/custom-text-anonymization-tool/"
 IGNORE_WORD_LIST = ['vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
 SIMPLE_TAGS = True
+IGNORE_WORD_LIST = ['date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
 
 
 class TextProcessor:
@@ -14,6 +15,7 @@ class TextProcessor:
         self.pipe_translate = None
         self.pipe_biomedical = None
         self.nlp = None
+        self.simple_tags = True
 
         # Regular expression patterns for additional replacements
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
@@ -72,7 +74,7 @@ class TextProcessor:
             pattern = r'\b' + re.escape(name) + r'\b'
             found_names.extend(re.findall(pattern, text))
 
-            if SIMPLE_TAGS:
+            if self.simple_tags:
                 text = re.sub(pattern, '*NAME*', text, flags=re.IGNORECASE)
             else:
                 text = re.sub(pattern, '*R-NAME*', text, flags=re.IGNORECASE)
@@ -93,7 +95,7 @@ class TextProcessor:
         for pat in date_patterns:
             found_dates.extend(re.findall(pat, text))
 
-            if SIMPLE_TAGS:
+            if self.simple_tags:
                 text = re.sub(pat, '*DATE*', text)
             else:
                 text = re.sub(pat, '*R-DATE*', text)
@@ -180,7 +182,7 @@ class TextProcessor:
                     pattern_for_replacement = r'\b' + re.escape(orig_word) + r'\b'
                     print(f"!!!!!!Using orig word for replacement: {orig_word} instead of {result['word']}")
 
-                if SIMPLE_TAGS:
+                if self.simple_tags:
 
                     # replace all date tags with a simple *DATE* tag
                     if result['entity_group'] in ['B-DATE', 'I-DATE', 'DATE']:
