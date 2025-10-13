@@ -1,21 +1,26 @@
 import time
+import os
 import re
+import json
 from transformers import pipeline, AutoTokenizer, AutoModelForTokenClassification
 from unidecode import unidecode
 
-base_path = "C:/Users/tomin/PycharmProjects/custom-text-anonymization-tool/"
-IGNORE_WORD_LIST = ['vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
-SIMPLE_TAGS = True
-IGNORE_WORD_LIST = ['date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
-
 
 class TextProcessor:
-    def __init__(self):
+    def __init__(self, base_path=None, config_file=None):
+
         # Initialize NLP pipelines
+        self.base_path = base_path if base_path is not None else os.path.dirname(os.path.abspath(__file__))
+        self.config = self.load_config(config_file)
         self.pipe_translate = None
         self.pipe_biomedical = None
         self.nlp = None
-        self.simple_tags = True
+
+        # Set words to ignore from default and config
+        self.ignore_words = ['date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
+        if 'ignore_words' in self.config and isinstance(self.config['ignore_words'], list):
+            self.ignore_words.extend(self.config['ignore_words'])
+            self.ignore_words = list(set(self.ignore_words))
 
         # Regular expression patterns for additional replacements
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
@@ -43,8 +48,31 @@ class TextProcessor:
     def get_nlp(self):
         """ Initialize the NLP pipeline if not already done"""
         if self.nlp is None:
-            self.nlp = pipeline("ner", model=base_path + "iguanodon-ai/bert-base-finnish-uncased-ner", aggregation_strategy='max')  # aggregation_strategy= simple, first, average or max
+            model_path = self.base_path + "/iguanodon-ai/bert-base-finnish-uncased-ner"
+            self.nlp = pipeline(task="ner", model=model_path, aggregation_strategy='max')  # aggregation_strategy= simple, first, average or max
+
         return self.nlp
+
+    def load_config(self, config_path=None):
+        """ Load configuration from a JSON file and set defaults for missing values """
+
+        if config_path is None:
+            config_path = self.base_path + "/config.json"
+
+        defaults = {
+            "printing": True,
+            "simple_tags": True,
+            "max_rows": 100000,
+            "ignore_words": []
+        }
+        with open(config_path, 'r', encoding='utf-8') as f:
+            config = json.load(f)
+
+        # Set defaults for missing values
+        for key, value in defaults.items():
+            config.setdefault(key, value)
+
+        return config
 
     def preprocess_text(self, text):
         """ Preprocess the text: strip whitespaces, normalize Unicode, and convert to lowercase"""
@@ -74,7 +102,7 @@ class TextProcessor:
             pattern = r'\b' + re.escape(name) + r'\b'
             found_names.extend(re.findall(pattern, text))
 
-            if self.simple_tags:
+            if self.config['simple_tags']:
                 text = re.sub(pattern, '*NAME*', text, flags=re.IGNORECASE)
             else:
                 text = re.sub(pattern, '*R-NAME*', text, flags=re.IGNORECASE)
@@ -95,7 +123,7 @@ class TextProcessor:
         for pat in date_patterns:
             found_dates.extend(re.findall(pat, text))
 
-            if self.simple_tags:
+            if self.config['simple_tags']:
                 text = re.sub(pat, '*DATE*', text)
             else:
                 text = re.sub(pat, '*R-DATE*', text)
@@ -159,7 +187,7 @@ class TextProcessor:
                     continue
 
                 # Skip words in the ignore list
-                if result['word'] in IGNORE_WORD_LIST:
+                if result['word'] in self.ignore_words:
                     continue
 
                 # get orig word based on start and end positions
@@ -180,9 +208,9 @@ class TextProcessor:
 
                 if orig_word.lower() != result['word'].lower():
                     pattern_for_replacement = r'\b' + re.escape(orig_word) + r'\b'
-                    print(f"!!!!!!Using orig word for replacement: {orig_word} instead of {result['word']}")
+                    #print(f"Using orig word {orig_word} instead of {result['word']} for replacement")
 
-                if self.simple_tags:
+                if self.config['simple_tags']:
 
                     # replace all date tags with a simple *DATE* tag
                     if result['entity_group'] in ['B-DATE', 'I-DATE', 'DATE']:
@@ -231,12 +259,14 @@ class TextProcessor:
 # Main execution for testing, for database processing see main.py
 if __name__ == '__main__':
 
+    app_path = os.path.dirname(os.path.abspath(__file__))
+
     # Measure the execution time
     start_time = time.time()
-    text_processor = TextProcessor()
+    text_processor = TextProcessor(base_path=app_path)
 
     # Process the input text file and write the redacted output to a file
-    redacted_output = text_processor.process_text_file(base_path + "input_output_text_files/your_input_file.txt")
-    text_processor.write_output(redacted_output, base_path + "input_output_text_files/data_for_output.txt")
+    redacted_output = text_processor.process_text_file(app_path + "/input_output_text_files/your_input_file.txt")
+    text_processor.write_output(redacted_output, app_path + "/input_output_text_files/data_for_output.txt")
 
     print("--- %s seconds ---" % (time.time() - start_time))

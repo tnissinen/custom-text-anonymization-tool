@@ -1,27 +1,18 @@
 import sqlite3
 from text_anonymization_tool import TextProcessor
 
-DB_PATH = "C:/Users/tomin/Temp/thorax_nlp/thorax_nlp.db"  # Replace with your actual database path
-TABLE_NAME = "thorax_data"  # Replace with your actual table name
-ID_COLUMN = "rownum"  # Replace with your actual ID column name
-INPUT_COLUMN = "report1"  # Replace with your actual column name
-OUTPUT_COLUMN = "report1_anon"  # Replace with your actual result column name
-SCORE_COLUMN = "report1_anon_score"  # Replace with your actual score column name
-WARNING_COLUMN = "report1_anon_info"  # Replace with your actual warning column name
-printing = True  # Global variable to control printing
-
 
 def run_anonymize_for_db(input_column=None, table_name=None):
     """Anonymize text data in a specified column of a database table."""
 
-    global printing
+    global text_processor
 
     if input_column is None or input_column == "":
         # use default columns
-        input_column = INPUT_COLUMN
-        output_column = OUTPUT_COLUMN
-        score_column = SCORE_COLUMN
-        warning_column = WARNING_COLUMN
+        input_column = text_processor.config['input_column']
+        output_column = text_processor.config['output_column']
+        score_column = text_processor.config['score_column']
+        warning_column = text_processor.config['warning_column']
     else:
         # create output, score, and warning column names based on input column
         output_column = f"{input_column}_anon"
@@ -30,19 +21,22 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
     if table_name is None or table_name == "":
         # use default table name
-        table_name = TABLE_NAME
+        table_name = text_processor.config['table_name']
 
-    print(f"Running anonymize to db: {DB_PATH}")
+    db_path = text_processor.config['db_path']
+    id_column = text_processor.config['id_column']
+
+    print(f"Running anonymize to db: {db_path}")
     print(f"Table: {table_name}, input column: {input_column}, output column: {output_column}, score column: {score_column}")
 
     # connect to the database and create cursors for selecting and updating
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(db_path)
     select_cursor = conn.cursor()
     update_cursor = conn.cursor()
 
     # create the query to select rows with non-null and non-empty input column values
-    query_text = f"SELECT {ID_COLUMN}, {input_column} FROM {table_name} WHERE {input_column} is not null and {input_column} != '-'"
-    query_text += f" and {ID_COLUMN} >= 0 and {ID_COLUMN} <= 1000000"
+    query_text = f"SELECT {id_column}, {input_column} FROM {table_name} WHERE {input_column} is not null and {input_column} != '-'"
+    query_text += f" and {id_column} >= 0 and {id_column} <= 1000000"
 
     # count the number of rows to be processed
     query_row_count = "SELECT COUNT(*) FROM ({})".format(query_text)
@@ -61,8 +55,7 @@ def run_anonymize_for_db(input_column=None, table_name=None):
     updated_rows = 0
     processed_rows = 0
 
-    # create an instance of the TextProcessor (contains the actual processing logic)
-    text_processor = TextProcessor()
+
 
     # iterate over the db rows
     for row in select_cursor:
@@ -93,7 +86,7 @@ def run_anonymize_for_db(input_column=None, table_name=None):
                 print(f"Word types: {word_types}")
 
             # Update the database with the redacted text
-            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {warning_column} = ? WHERE {ID_COLUMN} = ?"
+            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {warning_column} = ? WHERE {id_column} = ?"
             update_cursor.execute(update_query, (redacted_text, len(detected_words), warning_message, row_id))
             updated_rows += 1
         else:
@@ -117,14 +110,19 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
 
 if __name__ == '__main__':
-    #run_anonymize_for_db()
+
+    # create an instance of the TextProcessor (contains the actual processing logic), and load the config
+    text_processor = TextProcessor()
+    text_processor.load_config()
+
+    run_anonymize_for_db()
 
     #run_anonymize_for_db("report1")
     #run_anonymize_for_db("request1")
     #run_anonymize_for_db("report2")
     #run_anonymize_for_db("request2")
 
-    run_anonymize_for_db(input_column="Lausuntoteksti", table_name="Lausunnot_Xray_CT")
+    #run_anonymize_for_db(input_column="Lausuntoteksti", table_name="Lausunnot_Xray_CT")
 
     #run_anonymize_for_db(input_column="Lausuntoteksti", table_name="Lausunnot_10000")
     #run_anonymize_for_db(input_column="report_en", table_name="Lausunnot_10000")

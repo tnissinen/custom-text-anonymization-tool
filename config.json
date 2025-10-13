@@ -1,0 +1,13 @@
+{
+  "db_path": "c:/temp/xray/xray3.db",
+  "table_name": "xray_ordered",
+    "id_column": "rownum",
+    "input_column": "field7",
+    "output_column": "anonymized_text",
+    "score_column": "anonymized_score",
+    "warning_column": "anonymization_warnings",
+  "printing": true,
+  "simple_tags": true,
+  "max_rows": 10,
+  "ignore_words": []
+}

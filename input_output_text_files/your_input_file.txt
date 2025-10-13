@@ -1,0 +1,1 @@
+Potilas 1: Nimi: Matti Meikäläinen, Syntymäaika: 12.05.1980, Sähköposti: matti.meikalainen@example.com, Hetu: 120580-123A, Osoite: Katu 1, Helsinki, Diagnoosi: Diabetes, Historia: Potilas on ollut diabeteksen hoidossa 10 vuotta.
