@@ -6,8 +6,10 @@
     "output_column": "anonymized_text",
     "score_column": "anonymized_score",
     "warning_column": "anonymization_warnings",
+    "info_column": "report1_anon_info",
   "printing": true,
   "simple_tags": true,
-  "max_rows": 10,
+  "min_id": 0,
+  "max_id": 10,
   "ignore_words": []
 }

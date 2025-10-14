@@ -12,12 +12,12 @@ def run_anonymize_for_db(input_column=None, table_name=None):
         input_column = text_processor.config['input_column']
         output_column = text_processor.config['output_column']
         score_column = text_processor.config['score_column']
-        warning_column = text_processor.config['warning_column']
+        info_column = text_processor.config['info_column']
     else:
         # create output, score, and warning column names based on input column
         output_column = f"{input_column}_anon"
         score_column = f"{input_column}_anon_score"
-        warning_column = f"{input_column}_anon_info"
+        info_column = f"{input_column}_anon_info"
 
     if table_name is None or table_name == "":
         # use default table name
@@ -25,6 +25,9 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
     db_path = text_processor.config['db_path']
     id_column = text_processor.config['id_column']
+    min_id = text_processor.config.get('min_id', 0)
+    max_id = text_processor.config.get('max_id', 1000000)
+    printing = text_processor.config.get('printing', True)
 
     print(f"Running anonymize to db: {db_path}")
     print(f"Table: {table_name}, input column: {input_column}, output column: {output_column}, score column: {score_column}")
@@ -36,7 +39,7 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
     # create the query to select rows with non-null and non-empty input column values
     query_text = f"SELECT {id_column}, {input_column} FROM {table_name} WHERE {input_column} is not null and {input_column} != '-'"
-    query_text += f" and {id_column} >= 0 and {id_column} <= 1000000"
+    query_text += f" and {id_column} >= {min_id} and {id_column} <= {max_id}"
 
     # count the number of rows to be processed
     query_row_count = "SELECT COUNT(*) FROM ({})".format(query_text)
@@ -54,8 +57,6 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
     updated_rows = 0
     processed_rows = 0
-
-
 
     # iterate over the db rows
     for row in select_cursor:
@@ -86,7 +87,7 @@ def run_anonymize_for_db(input_column=None, table_name=None):
                 print(f"Word types: {word_types}")
 
             # Update the database with the redacted text
-            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {warning_column} = ? WHERE {id_column} = ?"
+            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {info_column} = ? WHERE {id_column} = ?"
             update_cursor.execute(update_query, (redacted_text, len(detected_words), warning_message, row_id))
             updated_rows += 1
         else:
