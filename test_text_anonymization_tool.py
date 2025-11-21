@@ -28,6 +28,9 @@ class TestTextProcessor(unittest.TestCase):
         self.check_redacted_dates("Nikaman korkeus 41.3 cm", is_date=False)
         self.check_redacted_dates("Nikaman korkeus 1.32 cm", is_date=False)
 
+        self.check_redacted_dates("Nikaman korkeus 3.5 cm", is_date=False)
+        self.check_redacted_dates("Nikama on 23.8 mm korkea", is_date=False)
+
     def test_redact_dates_2(self):
         self.check_redacted_dates("Vertailussa on kuvat 25/6/12. Nikamacorpusten muoto on tavallinen. Toinen kuvaus 4/11/20.")
         self.check_redacted_dates("Vertailussa 25/7 kuvat.")
