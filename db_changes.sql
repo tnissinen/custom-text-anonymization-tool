@@ -2,17 +2,9 @@ alter table thorax_data add column report1_anon text;
 alter table thorax_data add column report1_anon_score integer;
 alter table thorax_data add column report1_anon_info text;
 
-alter table thorax_data add column request1_anon text;
-alter table thorax_data add column request1_anon_score integer;
-alter table thorax_data add column request1_anon_info text;
-
 alter table thorax_data add column report2_anon text;
 alter table thorax_data add column report2_anon_score integer;
 alter table thorax_data add column report2_anon_info text;
-
-alter table thorax_data add column request2_anon text;
-alter table thorax_data add column request2_anon_score integer;
-alter table thorax_data add column request2_anon_info text;
 
 update thorax_data set report1_anon=null, report1_anon_score=null, report1_anon_info=null, request1_anon=null, request1_anon_score=null, request1_anon_info=null;
 update thorax_data set report2_anon=null, report2_anon_score=null, report2_anon_info=null, request2_anon=null, request2_anon_score=null, request2_anon_info=null;
