@@ -30,8 +30,8 @@ class TextProcessor:
         self.date_patterns = [
             # 12.3.2022, 1.5.21, 12.3.2022 (dot-separated)
             r'\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\.?(?:\d{2,4})?\b',
-            # 12.3 (dot-separated, no year)
-            r'\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])\b',
+            # 12.3 (dot-separated, no year) + negative lookahead to avoid matching measurements like 12.3 cm or 12.3mm
+            r'\b(?:0?[1-9]|[12][0-9]|3[01])\.(?:0?[1-9]|1[0-2])(?!\s?(?:cm|mm))\b'
             # 2021-10-15 (ISO-style, year-month-day)
             r'\b\d{4}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[12][0-9]|3[01])\b',
             # 211015 or 20211015 (compact numeric date)
