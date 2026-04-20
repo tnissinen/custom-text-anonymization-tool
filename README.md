@@ -1,16 +1,13 @@
-# Text Anonymization Tool
+# rad_nlp_anonymizer
 
 ## Overview
-This tool anonymizes sensitive information in text files, including personal names, email addresses, Finnish social security numbers (Hetu), and other identifiable information using NLP.
+Anonymizer tool for radiological reports and other similar medical texts. Anonymizes sensitive information (names, emails, dates, and Finnish social security numbers).
 
-Medium article with examples: https://medium.com/@mithilesh007/a-simple-way-to-anonymize-texts-locally-safeguard-finnish-phi-with-this-tool-d8e9adf97e38
-
-For LLM based approach follow the article on https://medium.com/@mithilesh007/️-enhancing-text-anonymization-with-ollama-a-smarter-alternative-to-traditional-nlp-05f66618aec2 
+Based on the anonymization tool implementation in: https://medium.com/@mithilesh007/a-simple-way-to-anonymize-texts-locally-safeguard-finnish-phi-with-this-tool-d8e9adf97e38
 
 ## Features
-- Anonymizes personal names, email addresses, and Finnish social security numbers.
-- Supports additional entity types such as organizations, locations, and dates.
-- Flexible path configuration for input and output files.
+- Anonymizes names, email addresses, dates, and Finnish social security numbers.
+- Supports input and output text files as well as SQLite databases.
 
 ## Requirements
 - Python 3.9+
@@ -34,31 +31,11 @@ For LLM based approach follow the article on https://medium.com/@mithilesh007/�
     python nlp_pull_code.py
     ```
 
-## Usage
-1. Define the base path for your files in the script:
-    ```python
-    base_path = "//your/base/path/"
-    ```
+## Usage (text files)
 
-2. Place your input text file in the appropriate directory:
+1. Place your input text file in the appropriate directory:
     ```plaintext
     base_path + "input_output_text_files/your_input_file.txt"
-    ```
-
-3. Run the text anonymization script:
-    ```sh
-    python text_anonymization_tool.py
-    ```
-
-4. The redacted output will be saved in the specified output directory:
-    ```plaintext
-    base_path + "input_output_text_files/data_for_input.txt"
-    ```
-
-## Example (Gibberish text)
-1. Create a sample input file `your_input_file.txt` with the following content:
-    ```plaintext
-    Potilas 1: Nimi: Mattii Meeikkäläineeen, Syntymäaika: 12.05.1234, Sähköposti: etu.sukunimi@example.com, Hetu: 123456-123A, Osoite: Tervekatu 1, Helsinki, Diagnoosi: Diabetes, Historia: Potilas on ollut diabeteksen hoidossa 10 vuotta. Verensokeritasot ovat olleet hyvin hallinnassa insuliinihoidolla. Verotiedot: Tulot: 50,000€, Veronumero: 123456789
     ```
 
 2. Run the text anonymization script:
@@ -66,8 +43,19 @@ For LLM based approach follow the article on https://medium.com/@mithilesh007/�
     python text_anonymization_tool.py
     ```
 
-3. Check the output file `data_for_output.txt` for the redacted content.
+3. The redacted output will be saved in the specified output directory:
+    ```plaintext
+    base_path + "input_output_text_files/data_for_input.txt"
+    ```
+   
+## Usage (SQLite db)
 
-## Contributing
-Contributions are welcome! Please fork the repository and submit a pull request with your changes.
+1. Prepare your SQLite database with the appropriate schema:
+
+2. Configure database table names etc. in config.json:
+   
+3. Run the main.py script:
+    ```sh
+    python main.py
+    ```
 
