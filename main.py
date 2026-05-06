@@ -35,6 +35,10 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
     # connect to the database and create cursors for selecting and updating
     conn = sqlite3.connect(db_path)
+
+    # optimization: create index on id column if not exists for faster updates, especially if processing only a subset of the data based on id range
+    conn.execute("CREATE INDEX IF NOT EXISTS id_column_index ON {}({})".format(table_name, id_column))
+
     select_cursor = conn.cursor()
     update_cursor = conn.cursor()
 
@@ -94,6 +98,9 @@ def run_anonymize_for_db(input_column=None, table_name=None):
         else:
             if printing:
                 print(f"No sensitive information detected in row ID: {row_id}")
+
+            update_query = f"UPDATE {table_name} SET {output_column} = ? WHERE {id_column} = ?"
+            update_cursor.execute(update_query, (report_text, row_id))
 
         # report progress every 1000 rows
         if processed_rows % 1000 == 0:
