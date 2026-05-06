@@ -1,4 +1,5 @@
 import sqlite3
+import time
 from text_anonymization_tool import TextProcessor
 
 
@@ -96,10 +97,10 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
         # report progress every 1000 rows
         if processed_rows % 1000 == 0:
-            print(f"Reports processed: {processed_rows}, labels updated: {updated_rows}")
+            print(f"Reports processed: {processed_rows}, reports updated: {updated_rows}")
 
     print("\n---------All rows processed---------------")
-    print(f"Total reports processed: {processed_rows}, total labels updated: {updated_rows}")
+    print(f"Total reports processed: {processed_rows}, total reports updated: {updated_rows}")
     print("\ncommitting changes to the database...")
 
     # commit the changes and close the cursors
@@ -112,9 +113,12 @@ def run_anonymize_for_db(input_column=None, table_name=None):
 
 if __name__ == '__main__':
 
+    start_time = time.perf_counter()
+
     # create an instance of the TextProcessor (contains the actual processing logic), and load the config
     text_processor = TextProcessor()
     text_processor.load_config()
+
 
     run_anonymize_for_db()
 
@@ -128,3 +132,6 @@ if __name__ == '__main__':
     #run_anonymize_for_db(input_column="Lausuntoteksti", table_name="Lausunnot_10000")
     #run_anonymize_for_db(input_column="report_en", table_name="Lausunnot_10000")
     #run_anonymize_for_db(input_column="report_fin", table_name="Lausunnot_10000")
+
+    total_time = time.perf_counter() - start_time
+    print("Total processing time: {:.1f}s".format(total_time))
