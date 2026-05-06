@@ -15,17 +15,17 @@ class TextProcessor:
         self.pipe_translate = None
         self.pipe_biomedical = None
         self.nlp = None
+        self.entity_groups = {'B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-DATE', 'I-DATE', 'DATE', 'PER', 'ORG', 'LOC'}
 
         # Set words to ignore from default and config
-        self.ignore_words = ['date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\']
+        self.ignore_words = {'date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\'}
         if 'ignore_words' in self.config and isinstance(self.config['ignore_words'], list):
-            self.ignore_words.extend(self.config['ignore_words'])
-            self.ignore_words = list(set(self.ignore_words))
+            self.ignore_words.update(self.config['ignore_words'])
 
         # Regular expression patterns for additional replacements
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
         self.ssn_pattern = re.compile(r'\b\d{2}\d{2}\d{2}[-+A]\d{3}[0-9A-FHJKLMNPRSTUVWXY]\b', re.I)
-        self.difficult_names_to_replace = ['Juvakka', 'Hartikainen', 'Anu', 'Arponen', 'Amro', 'Masarwah', 'Tiihonen', 'Ranta', 'Hämäläinen', "Harju", "Pitkänen", "Kettunen"]
+        self.difficult_names_to_replace = {'Juvakka', 'Hartikainen', 'Anu', 'Arponen', 'Amro', 'Masarwah', 'Tiihonen', 'Ranta', 'Hämäläinen', "Harju", "Pitkänen", "Kettunen"}
         self.time_pattern = re.compile(r'\b(?:[01]?\d|2[0-3]):[0-5]\d\b')  # Matches HH:MM format
         self.date_patterns = [
             # 12.3.2022, 1.5.21, 12.3.2022 (dot-separated) + negative lookahead to avoid matching measurements like 12.3 cm or 12.3mm
@@ -178,7 +178,7 @@ class TextProcessor:
         for result in nlp_results:
 
             # Only consider specific entity types for redaction
-            if result['entity_group'] in ['B-PER', 'I-PER', 'B-ORG', 'I-ORG', 'B-LOC', 'I-LOC', 'B-DATE', 'I-DATE', 'DATE', 'PER', 'ORG', 'LOC']:
+            if result['entity_group'] in self.entity_groups:
 
                 # Skip short words that are not dates (they are likely not names)
                 if result['entity_group'] not in ['B-DATE', 'I-DATE', 'DATE'] and len(result['word']) < 4:
