@@ -1,19 +1,13 @@
-name: text_processor
+name: text_processor2
 channels:
   - pytorch
 dependencies:
-  - python=3.9
+  - python=3.11
   - pytorch
   - torchvision
   - torchaudio
   - numpy
-  - pandas
-  - scipy
-  - scikit-learn
-  - matplotlib
   - unidecode
-  - sentencepiece
-  - protobuf
   - pip
   - pip:
     - transformers

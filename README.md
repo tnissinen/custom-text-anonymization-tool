@@ -16,8 +16,8 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
 ## Installation
 1. Clone the repository:
     ```sh
-    git clone https://github.com/mithp/text-anonymization-tool.git
-    cd text-anonymization-tool
+    git clone https://github.com/tnissinen/custom-text-anonymization-tool.git
+    cd custom-text-anonymization-tool
     ```
 
 2. Create and activate the conda environment:
