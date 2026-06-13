@@ -1,11 +1,10 @@
 {
-  "db_path": "c:/temp/xray/xray3.db",
-  "table_name": "jkl_validation_orig",
+  "db_path": "C:/Users/tomin/Temp/thorax_nlp/thorax_nlp.db",
+  "table_name": "siemens_gt_ordered",
     "id_column": "rownum",
     "input_column": "report_fin",
     "output_column": "report_fin_anon",
     "score_column": "report_fin_anon_score",
-    "warning_column": "anonymization_warnings",
     "info_column": "report_fin_anon_info",
   "printing": true,
   "simple_tags": true,
