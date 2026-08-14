@@ -1,6 +1,6 @@
 {
-  "db_path": "C:/Users/tomin/Temp/thorax_nlp/thorax_nlp.db",
-  "table_name": "siemens_gt_ordered",
+  "db_path": "C:/your_path/reports.db",
+  "table_name": "report_table",
     "id_column": "rownum",
     "input_column": "report_fin",
     "output_column": "report_fin_anon",

@@ -59,3 +59,21 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
     python main.py
     ```
 
+## Configuration
+
+The tool reads settings from config.json. Short explanations of the parameters:
+
+- db_path: Path to the SQLite database file.
+- table_name: Name of the table containing reports.
+- id_column: Column used as the row identifier (primary key).
+- input_column: Column containing the original text to anonymize.
+- output_column: Column where anonymized text will be written.
+- score_column: Column to store anonymization score (number of words redacted).
+- info_column: Column to store extra anonymization info or tags.
+- printing: true/false — print progress and debug info to console.
+- simple_tags: true/false — use simple replacement tags instead of verbose info.
+- min_id / max_id: Integer range (inclusive) of id_column values to process.
+- ignore_words: Array of words to skip during anonymization.
+
+Adjust these values in config.json before running the scripts.
+
