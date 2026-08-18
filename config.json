@@ -10,5 +10,6 @@
   "simple_tags": true,
   "min_id": 0,
   "max_id": 100000,
-  "ignore_words": []
+  "ignore_words": [],
+  "names_to_replace": []
 }

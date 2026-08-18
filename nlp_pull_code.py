@@ -1,10 +1,11 @@
+import os
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 
 # Define the folder path for saving models and tokenizers
-folder_on_save = 'C:/Users/tomni/PycharmProjects/custom-text-anonymization-tool/'
+folder_on_save = os.path.dirname(os.path.realpath(__file__))
 
 # Define full paths for each model and tokenizer
-full_path_01 = folder_on_save + 'iguanodon-ai/bert-base-finnish-uncased-ner'
+full_path_01 = folder_on_save + '/iguanodon-ai/bert-base-finnish-uncased-ner'
 
 def save_model_and_tokenizer(model_name, full_path):
     model = AutoModelForTokenClassification.from_pretrained(model_name)

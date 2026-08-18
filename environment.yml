@@ -1,9 +1,9 @@
-name: text_processor2
+name: rad_nlp_anonymizer
 channels:
   - pytorch
 dependencies:
   - python=3.11
-  - pytorch
+  - torch>= 2.5
   - torchvision
   - torchaudio
   - numpy

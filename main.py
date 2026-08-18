@@ -79,6 +79,8 @@ def run_anonymize_for_db(input_column=None, table_name=None):
         # if any words were detected, update the database
         if len(detected_words) > 0:
 
+            score = len(detected_words)  # number of detected words
+
             # turn unique detected_words and word_types into comma-separated strings
             warning_detected_types = ', '.join(set(word_types))
             warning_detected_words = ', '.join(set(detected_words))
@@ -91,16 +93,18 @@ def run_anonymize_for_db(input_column=None, table_name=None):
                 print(f"Redacted words: {redacted_words}")
                 print(f"Word types: {word_types}")
 
-            # Update the database with the redacted text
-            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {info_column} = ? WHERE {id_column} = ?"
-            update_cursor.execute(update_query, (redacted_text, len(detected_words), warning_message, row_id))
             updated_rows += 1
         else:
             if printing:
                 print(f"No sensitive information detected in row ID: {row_id}")
 
-            update_query = f"UPDATE {table_name} SET {output_column} = ? WHERE {id_column} = ?"
-            update_cursor.execute(update_query, (report_text, row_id))
+            redacted_text = report_text
+            warning_message = None
+            score = None
+
+        # Update the database with the redacted text
+        update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {info_column} = ? WHERE {id_column} = ?"
+        update_cursor.execute(update_query, (redacted_text, score, warning_message, row_id))
 
         # report progress every 1000 rows
         if processed_rows % 1000 == 0:
