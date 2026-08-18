@@ -27,8 +27,8 @@ class TextProcessor:
         self.ssn_pattern = re.compile(r'\b\d{2}\d{2}\d{2}[-+A]\d{3}[0-9A-FHJKLMNPRSTUVWXY]\b', re.I)
         self.difficult_names_to_replace = {'Juvakka', 'Hartikainen', 'Anu', 'Arponen', 'Amro', 'Masarwah', 'Tiihonen', 'Ranta', 'Hämäläinen', "Harju", "Pitkänen", "Kettunen"}
 
-        if 'names_to_replace' in self.config and isinstance(self.config['names_to_replace'], list):
-            self.difficult_names_to_replace.update(self.config['names_to_replace'])
+        if 'names_to_anonymize' in self.config and isinstance(self.config['names_to_anonymize'], list):
+            self.difficult_names_to_replace.update(self.config['names_to_anonymize'])
 
         self.time_pattern = re.compile(r'\b(?:[01]?\d|2[0-3]):[0-5]\d\b')  # Matches HH:MM format
         self.date_patterns = [

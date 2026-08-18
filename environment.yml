@@ -8,6 +8,8 @@ dependencies:
   - torchaudio
   - numpy
   - unidecode
+  - openpyxl
   - pip
   - pip:
     - transformers
+

@@ -7,11 +7,13 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
 
 ## Features
 - Anonymizes names, email addresses, dates, and Finnish social security numbers.
-- Supports input and output text files as well as SQLite databases.
+- Supports input and output text files, SQLite databases, and Excel (.xlsx) files (via openpyxl).
 
 ## Requirements
-- Python 3.9+
+- Python 3.11+
+- PyTorch 2.5+
 - Dependencies listed in `environment.yml`
+- openpyxl (for Excel .xlsx support). Install with: `pip install openpyxl`
 
 ## Installation
 1. Clone the repository:
@@ -48,7 +50,9 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
     base_path + "input_output_text_files/data_for_input.txt"
     ```
    
-## Usage (SQLite db)
+## Usage (SQLite db and Excel)
+
+### SQLite
 
 1. Prepare your SQLite database with the appropriate schema:
 
@@ -59,10 +63,24 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
     python main.py
     ```
 
+### Excel (.xlsx)
+
+1. Enable Excel processing in config.json:
+   - set `use_excel` to `true`
+   - set `excel_path` to the path of your .xlsx file
+2. Ensure the first row of the Excel file contains header names and that `input_column` matches a header.
+3. The script will add `output_column`, `score_column`, and `info_column` if they are missing and overwrite the original Excel file by default.
+4. Run the main script:
+    ```sh
+    python main.py
+    ```
+
 ## Configuration
 
 The tool reads settings from config.json. Short explanations of the parameters:
 
+- use_excel: true/false — enable Excel processing.
+- excel_path: Path to the Excel file to process.
 - db_path: Path to the SQLite database file.
 - table_name: Name of the table containing reports.
 - id_column: Column used as the row identifier (primary key).
@@ -74,6 +92,7 @@ The tool reads settings from config.json. Short explanations of the parameters:
 - simple_tags: true/false — use simple replacement tags instead of verbose info.
 - min_id / max_id: Integer range (inclusive) of id_column values to process.
 - ignore_words: Array of words to skip during anonymization.
+- names_to_anonymize: Array of specific names to anonymize.
 
 Adjust these values in config.json before running the scripts.
 
