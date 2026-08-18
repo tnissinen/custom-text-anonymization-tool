@@ -178,59 +178,70 @@ def anonymize_records(input_column=None, table_name=None):
 
         updated_rows = 0
         processed_rows = 0
+        batch_size = 1000
 
-        # iterate over the db rows
-        for row in select_cursor:
+        # iterate over the db rows in batches and commit after each batch to reduce transaction size
+        while True:
+            rows = select_cursor.fetchmany(batch_size)
+            if not rows:
+                break
 
-            row_id, report_text = row
+            # Prepare texts and IDs for batched processing
+            row_ids = [r[0] for r in rows]
+            report_texts = [r[1] for r in rows]
+
+            # process the batch using the TextProcessor batched pipeline
+            batch_results = text_processor.process_batch(report_texts)
+
+            for i, (redacted_text, detected_words, redacted_words, word_types) in enumerate(batch_results):
+                processed_rows += 1
+                row_id = row_ids[i]
+
+                if printing:
+                    print(f"\nProcessing row ID: {row_id}, report text: {str(report_texts[i])[:50]}...")
+
+                # if any words were detected, update the database
+                if len(detected_words) > 0:
+                    score = len(detected_words)  # number of detected words
+
+                    # turn unique detected_words and word_types into comma-separated strings
+                    warning_detected_types = ', '.join(set(word_types))
+                    warning_detected_words = ', '.join(set(detected_words))
+
+                    # combined warning message
+                    warning_message = f"{warning_detected_types}: {warning_detected_words}"
+
+                    if printing:
+                        print(f"Detected words: {detected_words}")
+                        print(f"Redacted words: {redacted_words}")
+                        print(f"Word types: {word_types}")
+
+                    updated_rows += 1
+                else:
+                    if printing:
+                        print(f"No sensitive information detected in row ID: {row_id}")
+
+                    redacted_text = report_texts[i]
+                    warning_message = None
+                    score = None
+
+                # Update the database with the redacted text
+                update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {info_column} = ? WHERE {id_column} = ?"
+                update_cursor.execute(update_query, (redacted_text, score, warning_message, row_id))
+
+            # commit after each batch
+            conn.commit()
 
             if printing:
-                print(f"Processing row ID: {row_id}, report text: {str(report_text)[:50]}...")
+                print("")
 
-            # process the text to redact names and other sensitive information
-            redacted_text, detected_words, redacted_words, word_types = text_processor.process_text(report_text)
-
-            processed_rows += 1
-
-            # if any words were detected, update the database
-            if len(detected_words) > 0:
-
-                score = len(detected_words)  # number of detected words
-
-                # turn unique detected_words and word_types into comma-separated strings
-                warning_detected_types = ', '.join(set(word_types))
-                warning_detected_words = ', '.join(set(detected_words))
-
-                # combined warning message
-                warning_message = f"{warning_detected_types}: {warning_detected_words}"
-
-                if printing:
-                    print(f"Detected words: {detected_words}")
-                    print(f"Redacted words: {redacted_words}")
-                    print(f"Word types: {word_types}")
-
-                updated_rows += 1
-            else:
-                if printing:
-                    print(f"No sensitive information detected in row ID: {row_id}")
-
-                redacted_text = report_text
-                warning_message = None
-                score = None
-
-            # Update the database with the redacted text
-            update_query = f"UPDATE {table_name} SET {output_column} = ?, {score_column} = ?, {info_column} = ? WHERE {id_column} = ?"
-            update_cursor.execute(update_query, (redacted_text, score, warning_message, row_id))
-
-            # report progress every 1000 rows
-            if processed_rows % 1000 == 0:
-                print(f"Reports processed: {processed_rows}, reports updated: {updated_rows}")
+            print(f"Reports processed: {processed_rows}, reports updated: {updated_rows}")
 
         print("\n---------All rows processed---------------")
         print(f"Total reports processed: {processed_rows}, total reports updated: {updated_rows}")
-        print("\ncommitting changes to the database...")
+        print("\ncommitting final changes to the database (if any)...")
 
-        # commit the changes and close the cursors
+        # final commit to ensure all changes persisted
         conn.commit()
         select_cursor.close()
         update_cursor.close()

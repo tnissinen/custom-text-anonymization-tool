@@ -21,6 +21,7 @@ class TextProcessor:
         self.ignore_words = {'date', 'name', 'vuoden', 'thoraxrontgen', 'thorax', 'thoraxin', 'thor', 'trochanter', 'sternumin', 'sternum', 'sope', 'vertailussa', 'arkisto', 'ster', 'lumen', 'pacs', 'pacsissa', 'issa', '.', ',', '!', '?', ':', ';', '(', ')', '[', ']', '{', '}', '"', "'", '-', '_', '/', '\\'}
         if 'ignore_words' in self.config and isinstance(self.config['ignore_words'], list):
             self.ignore_words.update(self.config['ignore_words'])
+            self.ignore_words = {word.lower() for word in self.ignore_words} # make sure words are lowercase
 
         # Regular expression patterns for additional replacements
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
@@ -29,6 +30,7 @@ class TextProcessor:
 
         if 'names_to_anonymize' in self.config and isinstance(self.config['names_to_anonymize'], list):
             self.difficult_names_to_replace.update(self.config['names_to_anonymize'])
+            self.difficult_names_to_replace = {word.lower() for word in self.difficult_names_to_replace}  # make sure words are lowercase
 
         self.time_pattern = re.compile(r'\b(?:[01]?\d|2[0-3]):[0-5]\d\b')  # Matches HH:MM format
         self.date_patterns = [
@@ -48,10 +50,19 @@ class TextProcessor:
         ]
 
     def get_nlp(self):
-        """ Initialize the NLP pipeline if not already done"""
+        """ Initialize the NLP pipeline if not already done and prefer GPU when available.
+        Falls back to CPU if torch is not installed or CUDA is unavailable.
+        """
         if self.nlp is None:
             model_path = self.base_path + "/iguanodon-ai/bert-base-finnish-uncased-ner"
-            self.nlp = pipeline(task="ner", model=model_path, aggregation_strategy='max')  # aggregation_strategy= simple, first, average or max
+            # Determine device safely without requiring torch at module import time
+            try:
+                import torch
+                device = 0 if torch.cuda.is_available() else -1
+            except Exception:
+                device = -1
+
+            self.nlp = pipeline(task="ner", model=model_path, aggregation_strategy='max', device=device)
 
         return self.nlp
 
@@ -65,7 +76,8 @@ class TextProcessor:
             "printing": True,
             "simple_tags": True,
             "max_rows": 100000,
-            "ignore_words": []
+            "ignore_words": [],
+            "redact_dates": True
         }
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
@@ -112,13 +124,18 @@ class TextProcessor:
         return text, found_names
 
     def replace_time_regex(self, text):
-        """ Replaces time patterns in the text with a placeholder. """
+        """ Replaces time patterns in the text with a placeholder. Honor config['redact_dates'].
+        """
+        if not self.config.get('redact_dates', True):
+            return text, []
         found_strings = []
         found_strings.extend(re.findall(self.time_pattern, text))
         return self.time_pattern.sub('*TIME*', text), found_strings
 
     def replace_dates_regex(self, text):
-        """ Replaces date patterns in the text with a placeholder. """
+        """ Replaces date patterns in the text with a placeholder. Honor config['redact_dates']. """
+        if not self.config.get('redact_dates', True):
+            return text, []
 
         date_patterns = self.date_patterns
         found_dates = []
@@ -140,10 +157,10 @@ class TextProcessor:
         word_types = []
 
         # 1. Preprocess the input text
-        processed_line = self.preprocess_text(input_text)
+        preprocessed_text = self.preprocess_text(input_text)
 
         # 2. Replace emails and Finnish SSNs
-        redacted_line, found_emails = self.replace_emails(processed_line)
+        redacted_line, found_emails = self.replace_emails(preprocessed_text)
         redacted_line, found_ssns = self.replace_finnish_ssn(redacted_line)
 
         for found_email in found_emails:
@@ -180,6 +197,10 @@ class TextProcessor:
         orig_redacted_line = redacted_line  # Keep the original line for reference
 
         for result in nlp_results:
+
+            # Skip date entities entirely if config disables date redaction
+            if result.get('entity_group') in ['B-DATE', 'I-DATE', 'DATE'] and not self.config.get('redact_dates', True):
+                continue
 
             # Only consider specific entity types for redaction
             if result['entity_group'] in self.entity_groups:
@@ -237,6 +258,134 @@ class TextProcessor:
                 word_types.append('R-NAME')
 
         return redacted_line, detected_words, redacted_words, word_types
+
+    def process_batch(self, input_texts):
+        """Process a batch of texts using regex preprocessing and a single batched NLP pipeline call.
+        Returns a list of tuples: (redacted_line, detected_words, redacted_words, word_types) for each input.
+        TODO: warning: vibe coded! refactor to avoid code duplication with process_text
+        """
+        # 1. Preprocess and run regex replacements for the whole batch
+        pre_redacted = []
+        pre_detected = []
+        for input_text in input_texts:
+            preprocessed_text = self.preprocess_text(input_text)
+            redacted_line, found_emails = self.replace_emails(preprocessed_text)
+            redacted_line, found_ssns = self.replace_finnish_ssn(redacted_line)
+            redacted_line, found_dates = self.replace_dates_regex(redacted_line)
+            redacted_line, found_times = self.replace_time_regex(redacted_line)
+
+            pre_redacted.append(redacted_line)
+            pre_detected.append({
+                'emails': found_emails,
+                'ssns': found_ssns,
+                'dates': found_dates,
+                'times': found_times
+            })
+
+        # 2. Run batched NER via the transformers pipeline to maximize GPU throughput
+        nlp = self.get_nlp()
+        # The pipeline accepts a list of strings and returns a list of lists of entity dicts
+        nlp_results = nlp(pre_redacted)
+
+        # 3. Apply NER results and postprocessing per item
+        batch_outputs = []
+        for idx, redacted_line in enumerate(pre_redacted):
+            detected_words = []
+            redacted_words = []
+            word_types = []
+
+            # include regex-detected items first
+            for found_email in pre_detected[idx]['emails']:
+                if found_email not in detected_words:
+                    detected_words.append(found_email)
+                    redacted_words.append('*R-EMAIL*')
+                    word_types.append('R-EMAIL')
+
+            for found_ssn in pre_detected[idx]['ssns']:
+                if found_ssn not in detected_words:
+                    detected_words.append(found_ssn)
+                    redacted_words.append('*R-HETU*')
+                    word_types.append('R-HETU')
+
+            for found_date in pre_detected[idx]['dates']:
+                if found_date not in detected_words:
+                    detected_words.append(found_date)
+                    redacted_words.append('*R-DATE*')
+                    word_types.append('R-DATE')
+
+            for found_time in pre_detected[idx]['times']:
+                if found_time not in detected_words:
+                    detected_words.append(found_time)
+                    redacted_words.append('*R-TIME*')
+                    word_types.append('R-TIME')
+
+            orig_redacted_line = redacted_line
+
+            # nlp_results may be a list-of-lists (one list per input)
+            item_results = nlp_results[idx] if isinstance(nlp_results, list) and len(nlp_results) > idx else []
+
+            for result in item_results:
+                # Skip date entities entirely if config disables date redaction
+                if result.get('entity_group') in ['B-DATE', 'I-DATE', 'DATE'] and not self.config.get('redact_dates', True):
+                    continue
+
+                # Only consider specific entity types for redaction
+                if result.get('entity_group') in self.entity_groups:
+                    # Skip short words that are not dates
+                    if result['entity_group'] not in ['B-DATE', 'I-DATE', 'DATE'] and len(result.get('word', '')) < 4:
+                        continue
+
+                    # Skip words in the ignore list
+                    if result.get('word') in self.ignore_words:
+                        continue
+
+                    # get orig word based on start and end positions
+                    start = result.get('start')
+                    end = result.get('end')
+                    if start is None or end is None:
+                        continue
+                    orig_word = orig_redacted_line[start:end]
+
+                    # Skip if the word is not found in the current redacted line (case insensitive)
+                    if redacted_line.lower().find(result.get('word', '').lower()) == -1:
+                        if orig_word.lower() == result.get('word', '').lower():
+                            continue
+
+                    # Create the redacted word based on the entity type
+                    redacted_word = f"*{result['entity_group']}*"
+
+                    # Escape special characters in the word for regex replacement
+                    pattern_for_replacement = r'\b' + re.escape(result.get('word', '')) + r'\b'
+
+                    if orig_word.lower() != result.get('word', '').lower():
+                        pattern_for_replacement = r'\b' + re.escape(orig_word) + r'\b'
+
+                    if self.config.get('simple_tags', True):
+                        # replace all date tags with a simple *DATE* tag
+                        if result['entity_group'] in ['B-DATE', 'I-DATE', 'DATE']:
+                            redacted_word = '*DATE*'
+                        else:
+                            redacted_word = '*NAME*'
+
+                    # Replace the detected word in the line with the redacted word (case insensitive)
+                    redacted_line = re.sub(pattern_for_replacement, redacted_word, redacted_line, flags=re.IGNORECASE)
+
+                    detected_words.append(result.get('word'))
+                    word_types.append(result.get('entity_group'))
+                    redacted_words.append(redacted_word)
+
+            # 4. Replace specific difficult names
+            redacted_line, found_difficult_names = self.replace_difficult_names(redacted_line)
+
+            for found_difficult_name in found_difficult_names:
+                if found_difficult_name not in detected_words:
+                    detected_words.append(found_difficult_name)
+                    redacted_words.append('*R-NAME*')
+                    word_types.append('R-NAME')
+
+            batch_outputs.append((redacted_line, detected_words, redacted_words, word_types))
+
+        return batch_outputs
 
     def process_text_file(self, filename):
         """ Process a text file and redact sensitive information line by line. """
