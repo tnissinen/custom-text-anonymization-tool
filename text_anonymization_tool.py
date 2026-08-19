@@ -77,7 +77,8 @@ class TextProcessor:
             "simple_tags": True,
             "max_rows": 100000,
             "ignore_words": [],
-            "redact_dates": True
+            "redact_dates": True,
+            "batch_size": 1000
         }
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)

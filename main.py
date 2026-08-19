@@ -173,16 +173,17 @@ def anonymize_records(input_column=None, table_name=None):
             printing = False
             print("Disabling printing for over 100 rows")
 
-        # execute the actual rows query
-        select_cursor.execute(query_text)
-
+        # iterate over the db rows in batches using LIMIT/OFFSET and commit after each batch to reduce transaction size
         updated_rows = 0
         processed_rows = 0
-        batch_size = 1000
+        batch_size = int(text_processor.config.get('batch_size', 1000))
+        offset = 0
 
-        # iterate over the db rows in batches and commit after each batch to reduce transaction size
         while True:
-            rows = select_cursor.fetchmany(batch_size)
+            # Fetch only batch_size rows using LIMIT/OFFSET
+            paged_query = query_text + " LIMIT ? OFFSET ?"
+            select_cursor.execute(paged_query, (batch_size, offset))
+            rows = select_cursor.fetchall()
             if not rows:
                 break
 
@@ -236,6 +237,9 @@ def anonymize_records(input_column=None, table_name=None):
                 print("")
 
             print(f"Reports processed: {processed_rows}, reports updated: {updated_rows}")
+
+            # Move to next page
+            offset += len(rows)
 
         print("\n---------All rows processed---------------")
         print(f"Total reports processed: {processed_rows}, total reports updated: {updated_rows}")
