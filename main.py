@@ -99,7 +99,8 @@ def anonymize_records(config_path):
             report_text = ws.cell(row=r, column=input_idx).value
 
             if printing:
-                display_text = str(report_text)[:50] if report_text is not None else ''
+                display_text = str(report_text)[:200] if report_text is not None else ''
+                display_text = display_text.replace("_x000D_", "")
                 print(f"Processing row ID: {row_id}, report text: {display_text}...")
 
             redacted_text, detected_words, redacted_words, word_types = text_processor.process_text(report_text)
@@ -141,7 +142,7 @@ def anonymize_records(config_path):
         print("\nDONE\n")
 
     else:
-        # SQLite database processing (existing behavior)
+        # SQLite database processing
         table_name = text_processor.config['table_name']
         db_path = text_processor.config['db_path']
 
@@ -198,7 +199,7 @@ def anonymize_records(config_path):
                 row_id = row_ids[i]
 
                 if printing:
-                    print(f"\nProcessing row ID: {row_id}, report text: {str(report_texts[i])[:50]}...")
+                    print(f"\nProcessing row ID: {row_id}, report text: {str(report_texts[i])[:200]}...")
 
                 # if any words were detected, update the database
                 if len(detected_words) > 0:
