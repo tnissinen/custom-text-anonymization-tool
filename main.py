@@ -5,25 +5,18 @@ import utils
 from text_anonymization_tool import TextProcessor
 
 
-
-def anonymize_records(input_column=None, table_name=None):
+def anonymize_records(config_path):
     """Anonymize text data in a specified column of a database table or Excel file based on config."""
 
-    global text_processor
+    # create an instance of the TextProcessor with optional config_path
+    text_processor = TextProcessor(config_file=config_path)
 
-    if input_column is None or input_column == "":
-        # use default columns
-        input_column = text_processor.config['input_column']
-        output_column = text_processor.config['output_column']
-        score_column = text_processor.config['score_column']
-        info_column = text_processor.config['info_column']
-    else:
-        # create output, score, and warning column names based on input column
-        output_column = f"{input_column}_anon"
-        score_column = f"{input_column}_anon_score"
-        info_column = f"{input_column}_anon_info"
+    # read config values
+    input_column = text_processor.config['input_column']
+    output_column = text_processor.config['output_column']
+    score_column = text_processor.config['score_column']
+    info_column = text_processor.config['info_column']
 
-    # common config values
     id_column = text_processor.config['id_column']
     min_id = text_processor.config.get('min_id', 0)
     max_id = text_processor.config.get('max_id', 1000000)
@@ -51,6 +44,9 @@ def anonymize_records(input_column=None, table_name=None):
 
         if input_column not in headers:
             raise ValueError(f"Input column '{input_column}' not found in Excel headers: {headers}")
+
+        if id_column not in headers:
+            raise ValueError(f"Id column '{input_column}' not found in Excel headers: {headers}")
 
         # Helper to ensure an output column exists; returns 1-based column index
         def ensure_column(col_name):
@@ -146,7 +142,7 @@ def anonymize_records(input_column=None, table_name=None):
 
     else:
         # SQLite database processing (existing behavior)
-        table_name = table_name if (table_name is not None and table_name != "") else text_processor.config['table_name']
+        table_name = text_processor.config['table_name']
         db_path = text_processor.config['db_path']
 
         print(f"Running anonymize to db: {db_path}")
@@ -258,22 +254,21 @@ def anonymize_records(input_column=None, table_name=None):
 
 if __name__ == '__main__':
 
+    # check and report GPU availability
     utils.check_torch_gpu()
+
+    # check model and download if needed (first run)
+    model_repo = "iguanodon-ai/bert-base-finnish-uncased-ner"
+    utils.check_model_and_tokenizer(model_repo)
 
     start_time = time.perf_counter()
 
     # read first command-line argument as config path (optional)
-    config_path = sys.argv[1] if len(sys.argv) > 1 else None
+    config_from_parameter = sys.argv[1] if len(sys.argv) > 1 else None
 
-    # create an instance of the TextProcessor with optional config_path
-    text_processor = TextProcessor(config_file=config_path)
-
-    anonymize_records()
-
-    #anonymize_records("report1")
-    #anonymize_records("report2")
-
-    #anonymize_records(input_column="my_report_column", table_name="my_table")
+    # run anonymization
+    anonymize_records(config_from_parameter)
 
     total_time = time.perf_counter() - start_time
     print("Total processing time: {:.1f}s".format(total_time))
+

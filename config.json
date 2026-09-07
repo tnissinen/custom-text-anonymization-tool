@@ -6,11 +6,13 @@
     "output_column": "report_fin_anon",
     "score_column": "report_fin_anon_score",
     "info_column": "report_fin_anon_info",
+  "use_excel": false,
+  "excel_path": "C:/temp/text_excel.xlsx",
   "printing": true,
   "simple_tags": true,
   "redact_dates": false,
   "min_id": 0,
   "max_id": 100000,
   "ignore_words": [],
-  "names_to_replace": []
+  "names_to_anonymize": []
 }

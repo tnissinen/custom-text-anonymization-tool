@@ -114,7 +114,7 @@ class TextProcessor:
 
         for name in self.difficult_names_to_replace:
             pattern = r'\b' + re.escape(name) + r'\b'
-            found_names.extend(re.findall(pattern, text))
+            found_names.extend(re.findall(pattern, text, flags=re.IGNORECASE))
 
             if self.config['simple_tags']:
                 text = re.sub(pattern, '*NAME*', text, flags=re.IGNORECASE)
@@ -150,131 +150,31 @@ class TextProcessor:
         return text, found_dates
 
     def process_text(self, input_text):
-        """ Process a single chunk of text and redact sensitive information. """
+        """ Process a single chunk of text and redact sensitive information.
 
-        detected_words = []
-        redacted_words = []
-        word_types = []
+            NOTE: For efficient batch processing, use process_batch instead!
+        """
 
-        # 1. Preprocess the input text
-        preprocessed_text = self.preprocess_text(input_text)
-
-        # 2. Replace emails and Finnish SSNs
-        redacted_line, found_emails = self.replace_emails(preprocessed_text)
-        redacted_line, found_ssns = self.replace_finnish_ssn(redacted_line)
-
-        for found_email in found_emails:
-            if found_email not in detected_words:
-                detected_words.append(found_email)
-                redacted_words.append('*R-EMAIL*')
-                word_types.append('R-EMAIL')
-
-        for found_ssn in found_ssns:
-            if found_ssn not in detected_words:
-                detected_words.append(found_ssn)
-                redacted_words.append('*R-HETU*')
-                word_types.append('R-HETU')
-
-        # 3. Replace dates and times using regex
-        redacted_line, found_dates = self.replace_dates_regex(redacted_line)
-        redacted_line, found_times = self.replace_time_regex(redacted_line)
-
-        for found_date in found_dates:
-            if found_date not in detected_words:
-                detected_words.append(found_date)
-                redacted_words.append('*R-DATE*')
-                word_types.append('R-DATE')
-
-        for found_time in found_times:
-            if found_time not in detected_words:
-                detected_words.append(found_time)
-                redacted_words.append('*R-TIME*')
-                word_types.append('R-TIME')
-
-        # 4. Use NLP model to identify and redact named entities
-        nlp_results = self.get_nlp()(redacted_line)
-
-        orig_redacted_line = redacted_line  # Keep the original line for reference
-
-        for result in nlp_results:
-
-            # Skip date entities entirely if config disables date redaction
-            if result.get('entity_group') in ['B-DATE', 'I-DATE', 'DATE'] and not self.config.get('redact_dates', True):
-                continue
-
-            # Only consider specific entity types for redaction
-            if result['entity_group'] in self.entity_groups:
-
-                # Skip short words that are not dates (they are likely not names)
-                if result['entity_group'] not in ['B-DATE', 'I-DATE', 'DATE'] and len(result['word']) < 4:
-                    continue
-
-                # Skip words in the ignore list
-                if result['word'] in self.ignore_words:
-                    continue
-
-                # get orig word based on start and end positions
-                orig_word = orig_redacted_line[result['start']:result['end']]
-
-                # Skip if the word is not found in the current redacted line (case insensitive) --> means it was already redacted by regex
-                if redacted_line.lower().find(result['word']) == -1:
-
-                    if orig_word.lower() == result['word'].lower():  # not because of case or äöå
-                        continue
-
-                # Create the redacted word based on the entity type
-                redacted_word = f"*{result['entity_group']}*"
-                redacted_words.append(redacted_word)
-
-                # Escape special characters in the word for regex replacement
-                pattern_for_replacement = r'\b' + re.escape(result['word']) + r'\b'
-
-                if orig_word.lower() != result['word'].lower():
-                    pattern_for_replacement = r'\b' + re.escape(orig_word) + r'\b'
-                    #print(f"Using orig word {orig_word} instead of {result['word']} for replacement")
-
-                if self.config['simple_tags']:
-
-                    # replace all date tags with a simple *DATE* tag
-                    if result['entity_group'] in ['B-DATE', 'I-DATE', 'DATE']:
-                        redacted_word = '*DATE*'
-                    # replace all other tags with a simple *NAME* tag
-                    else:
-                        redacted_word = '*NAME*'
-
-                # Replace the detected word in the line with the redacted word (case insensitive)
-                redacted_line = re.sub(pattern_for_replacement, redacted_word, redacted_line, flags=re.IGNORECASE)
-
-                detected_words.append(result['word'])
-                word_types.append(result['entity_group'])
-
-        # 5. Replace specific difficult names
-        redacted_line, found_difficult_names = self.replace_difficult_names(redacted_line)
-
-        for found_difficult_name in found_difficult_names:
-            if found_difficult_name not in detected_words:
-                detected_words.append(found_difficult_name)
-                redacted_words.append('*R-NAME*')
-                word_types.append('R-NAME')
-
+        # process the batch using the TextProcessor batched pipeline
+        batch_results = self.process_batch([input_text])
+        redacted_line, detected_words, redacted_words, word_types = batch_results[0]
         return redacted_line, detected_words, redacted_words, word_types
 
     def process_batch(self, input_texts):
         """Process a batch of texts using regex preprocessing and a single batched NLP pipeline call.
-        Returns a list of tuples: (redacted_line, detected_words, redacted_words, word_types) for each input.
-        TODO: warning: vibe coded! refactor to avoid code duplication with process_text
+        Returns a list of tuples: (redacted_text, detected_words, redacted_words, word_types) for each input.
         """
         # 1. Preprocess and run regex replacements for the whole batch
         pre_redacted = []
         pre_detected = []
         for input_text in input_texts:
             preprocessed_text = self.preprocess_text(input_text)
-            redacted_line, found_emails = self.replace_emails(preprocessed_text)
-            redacted_line, found_ssns = self.replace_finnish_ssn(redacted_line)
-            redacted_line, found_dates = self.replace_dates_regex(redacted_line)
-            redacted_line, found_times = self.replace_time_regex(redacted_line)
+            redacted_text, found_emails = self.replace_emails(preprocessed_text)
+            redacted_text, found_ssns = self.replace_finnish_ssn(redacted_text)
+            redacted_text, found_dates = self.replace_dates_regex(redacted_text)
+            redacted_text, found_times = self.replace_time_regex(redacted_text)
 
-            pre_redacted.append(redacted_line)
+            pre_redacted.append(redacted_text)
             pre_detected.append({
                 'emails': found_emails,
                 'ssns': found_ssns,
@@ -289,7 +189,7 @@ class TextProcessor:
 
         # 3. Apply NER results and postprocessing per item
         batch_outputs = []
-        for idx, redacted_line in enumerate(pre_redacted):
+        for idx, redacted_text in enumerate(pre_redacted):
             detected_words = []
             redacted_words = []
             word_types = []
@@ -319,7 +219,7 @@ class TextProcessor:
                     redacted_words.append('*R-TIME*')
                     word_types.append('R-TIME')
 
-            orig_redacted_line = redacted_line
+            orig_redacted_line = redacted_text
 
             # nlp_results may be a list-of-lists (one list per input)
             item_results = nlp_results[idx] if isinstance(nlp_results, list) and len(nlp_results) > idx else []
@@ -346,8 +246,8 @@ class TextProcessor:
                         continue
                     orig_word = orig_redacted_line[start:end]
 
-                    # Skip if the word is not found in the current redacted line (case insensitive)
-                    if redacted_line.lower().find(result.get('word', '').lower()) == -1:
+                    # Skip if the word is not found in the current redacted text (case insensitive)
+                    if redacted_text.lower().find(result.get('word', '').lower()) == -1:
                         if orig_word.lower() == result.get('word', '').lower():
                             continue
 
@@ -368,22 +268,26 @@ class TextProcessor:
                             redacted_word = '*NAME*'
 
                     # Replace the detected word in the line with the redacted word (case insensitive)
-                    redacted_line = re.sub(pattern_for_replacement, redacted_word, redacted_line, flags=re.IGNORECASE)
+                    redacted_text = re.sub(pattern_for_replacement, redacted_word, redacted_text, flags=re.IGNORECASE)
 
                     detected_words.append(result.get('word'))
                     word_types.append(result.get('entity_group'))
                     redacted_words.append(redacted_word)
 
             # 4. Replace specific difficult names
-            redacted_line, found_difficult_names = self.replace_difficult_names(redacted_line)
+            redacted_text, found_difficult_names = self.replace_difficult_names(redacted_text)
 
             for found_difficult_name in found_difficult_names:
                 if found_difficult_name not in detected_words:
                     detected_words.append(found_difficult_name)
                     redacted_words.append('*R-NAME*')
-                    word_types.append('R-NAME')
 
-            batch_outputs.append((redacted_line, detected_words, redacted_words, word_types))
+                    if self.config.get('simple_tags', True):
+                        word_types.append('*NAME*')
+                    else:
+                        word_types.append('R-NAME')
+
+            batch_outputs.append((redacted_text, detected_words, redacted_words, word_types))
 
         return batch_outputs
 

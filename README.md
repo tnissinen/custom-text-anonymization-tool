@@ -43,28 +43,6 @@ For GPU support, you can install PyTorch and torchvision with the following comm
 pip uninstall -y torch torchvision
 pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 ```
-
-3. Run the `nlp_pull_code.py` script to download and save the models:
-    ```sh
-    python nlp_pull_code.py
-    ```
-
-## Usage (text files)
-
-1. Place your input text file in the appropriate directory:
-    ```plaintext
-    base_path + "input_output_text_files/your_input_file.txt"
-    ```
-
-2. Run the text anonymization script:
-    ```sh
-    python text_anonymization_tool.py
-    ```
-
-3. The redacted output will be saved in the specified output directory:
-    ```plaintext
-    base_path + "input_output_text_files/data_for_input.txt"
-    ```
    
 ## Usage (SQLite db and Excel)
 
@@ -112,3 +90,20 @@ The tool reads settings from config.json. Short explanations of the parameters:
 
 Adjust these values in config.json before running the scripts.
 
+
+## Usage (text files)
+
+1. Place your input text file in the appropriate directory:
+    ```plaintext
+    base_path + "input_output_text_files/your_input_file.txt"
+    ```
+
+2. Run the text anonymization script:
+    ```sh
+    python text_anonymization_tool.py
+    ```
+
+3. The redacted output will be saved in the specified output directory:
+    ```plaintext
+    base_path + "input_output_text_files/data_for_input.txt"
+    ```
