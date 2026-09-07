@@ -1,7 +1,9 @@
 import sqlite3
 import time
 import sys
+import utils
 from text_anonymization_tool import TextProcessor
+
 
 
 def anonymize_records(input_column=None, table_name=None):
@@ -255,6 +257,8 @@ def anonymize_records(input_column=None, table_name=None):
 
 
 if __name__ == '__main__':
+
+    utils.check_torch_gpu()
 
     start_time = time.perf_counter()
 
