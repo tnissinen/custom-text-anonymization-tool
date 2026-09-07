@@ -1,5 +1,6 @@
 import sqlite3
 import time
+import sys
 from text_anonymization_tool import TextProcessor
 
 
@@ -257,10 +258,11 @@ if __name__ == '__main__':
 
     start_time = time.perf_counter()
 
-    # create an instance of the TextProcessor (contains the actual processing logic), and load the config
-    text_processor = TextProcessor()
-    config = text_processor.load_config()
+    # read first command-line argument as config path (optional)
+    config_path = sys.argv[1] if len(sys.argv) > 1 else None
 
+    # create an instance of the TextProcessor with optional config_path
+    text_processor = TextProcessor(config_file=config_path)
 
     anonymize_records()
 

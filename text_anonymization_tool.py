@@ -3,7 +3,6 @@ import os
 import re
 import json
 from transformers import pipeline, AutoTokenizer, AutoModelForTokenClassification
-from unidecode import unidecode
 
 
 class TextProcessor:

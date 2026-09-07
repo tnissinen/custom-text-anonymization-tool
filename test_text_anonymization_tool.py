@@ -75,7 +75,7 @@ class TestTextProcessor(unittest.TestCase):
         self.assertEqual(word_types, [])
 
     def test_redact_names_without_names_3(self):
-        text = "Sternumin haavainfektio keuhkotubin hoidossa. Kyseessä 78-vuotias mies. P.k. kontrolli thorax CT. Verenpaine matala 50/80. Ei kuumetta."
+        text = "Sternumin haavainfektio keuhkotubin hoidossa. Kyseessä 67-vuotias mies. P.k. kontrolli thorax CT. Verenpaine matala 50/80. Ei kuumetta."
         redacted, detected, redacted_words, word_types = self.processor.process_text(text)
         self.assertEqual(redacted, text)
         self.assertEqual(detected, [])

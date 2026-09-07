@@ -3,7 +3,16 @@
 ## Overview
 Anonymizer tool for radiological reports and other similar medical texts. Anonymizes sensitive information (names, emails, dates, and Finnish social security numbers).
 
+e.g. 
+*"Vertailussa 1.1.2020 otetut kuvat. Rintarangassa näkyy osteoporoottinen kompressiomurtuma. Sitä ei näkynyt vielä 1/2020 kuvassa. Matti Meikäläinen, rad.el."*
+
+-->
+*"Vertailussa \*DATE\* otetut kuvat. Rintarangassa näkyy osteoporoottinen kompressiomurtuma. Sitä ei näkynyt vielä \*DATE\* kuvassa. \*NAME\*, rad.el."*
+
+
 Based on the anonymization tool implementation in: https://medium.com/@mithilesh007/a-simple-way-to-anonymize-texts-locally-safeguard-finnish-phi-with-this-tool-d8e9adf97e38
+
+
 
 ## Features
 - Anonymizes names, email addresses, dates, and Finnish social security numbers.
@@ -27,6 +36,13 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
     conda env create -f environment.yml
     conda activate text_processor
     ```
+   
+For GPU support, you can install PyTorch and torchvision with the following commands (select the appropriate CUDA version for your system, check https://pytorch.org/):
+
+```sh
+pip uninstall -y torch torchvision
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+```
 
 3. Run the `nlp_pull_code.py` script to download and save the models:
     ```sh
