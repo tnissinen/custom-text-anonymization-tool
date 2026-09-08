@@ -34,7 +34,7 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
 2. Create and activate the conda environment:
     ```sh
     conda env create -f environment.yml
-    conda activate text_processor
+    conda activate rad_nlp_anonymizer
     ```
    
 For GPU support, you can install PyTorch and torchvision with the following commands (select the appropriate CUDA version for your system, check https://pytorch.org/):
