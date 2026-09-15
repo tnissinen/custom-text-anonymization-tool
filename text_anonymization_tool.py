@@ -6,6 +6,8 @@ from transformers import pipeline, AutoTokenizer, AutoModelForTokenClassificatio
 
 
 class TextProcessor:
+    """ Class for processing text and redacting sensitive information using regex and NLP pipelines. """
+
     def __init__(self, base_path=None, config_file=None):
 
         # Initialize NLP pipelines
@@ -25,8 +27,9 @@ class TextProcessor:
         # Regular expression patterns for additional replacements
         self.email_pattern = re.compile(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b')
         self.ssn_pattern = re.compile(r'\b\d{2}\d{2}\d{2}[-+A]\d{3}[0-9A-FHJKLMNPRSTUVWXY]\b', re.I)
-        self.difficult_names_to_replace = {'Juvakka', 'Hartikainen', 'Anu', 'Arponen', 'Amro', 'Masarwah', 'Tiihonen', 'Ranta', 'Hämäläinen', "Harju", "Pitkänen", "Kettunen"}
+        self.difficult_names_to_replace = {}
 
+        # Load additional names to anonymize from config if provided
         if 'names_to_anonymize' in self.config and isinstance(self.config['names_to_anonymize'], list):
             self.difficult_names_to_replace.update(self.config['names_to_anonymize'])
             self.difficult_names_to_replace = {word.lower() for word in self.difficult_names_to_replace}  # make sure words are lowercase
@@ -311,7 +314,7 @@ class TextProcessor:
                 f.write(line)
 
 
-# Main execution for testing, for database processing see main.py
+# Main execution for testing, for database/excel processing see main.py
 if __name__ == '__main__':
 
     app_path = os.path.dirname(os.path.abspath(__file__))

@@ -3,6 +3,8 @@ from text_anonymization_tool import TextProcessor
 
 
 class TestTextProcessor(unittest.TestCase):
+    """ Unit tests for the TextProcessor class."""
+
     def setUp(self):
         self.processor = TextProcessor()
 

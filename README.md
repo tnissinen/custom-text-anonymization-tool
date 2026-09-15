@@ -18,6 +18,13 @@ Based on the anonymization tool implementation in: https://medium.com/@mithilesh
 - Anonymizes names, email addresses, dates, and Finnish social security numbers.
 - Supports input and output text files, SQLite databases, and Excel (.xlsx) files (via openpyxl).
 
+## Project structure
+- `main.py` — entry point for running the anonymization flow.
+- `excel_processing.py` — Excel-specific code for reading and writing `.xlsx` workbooks.
+- `db_processing.py` — SQLite-specific code for selecting and updating rows in a database.
+- `text_anonymization_tool.py` — the NLP and redaction logic.
+- `utils.py` — model and environment helper functions.
+
 ## Requirements
 - Python 3.11+
 - PyTorch 2.5+
@@ -48,26 +55,26 @@ pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
 
 ### SQLite
 
-1. Prepare your SQLite database with the appropriate schema:
-
-2. Configure database table names etc. in config.json:
-   
-3. Run the main.py script:
+1. Prepare your SQLite database with the appropriate schema.
+2. Configure database table names etc. in `config.json`.
+3. `main.py` calls the SQLite logic from `db_processing.py` automatically.
+4. Run the main script:
     ```sh
     python main.py
     ```
 
 ### Excel (.xlsx)
 
-1. Enable Excel processing in config.json:
+1. Enable Excel processing in `config.json`:
    - set `use_excel` to `true`
-   - set `excel_path` to the path of your .xlsx file
+   - set `excel_path` to the path of your `.xlsx` file
 2. Ensure the first row of the Excel file contains header names and that `input_column` matches a header.
 3. The script will add `output_column`, `score_column`, and `info_column` if they are missing and overwrite the original Excel file by default.
-4. Run the main script:
-    ```sh
-    python main.py
-    ```
+4. `main.py` routes Excel processing to `excel_processing.py`.
+5. Run the main script:
+   ```sh
+   python main.py
+   ```
 
 ## Configuration
 
