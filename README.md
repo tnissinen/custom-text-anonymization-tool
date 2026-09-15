@@ -1,7 +1,7 @@
 # rad_nlp_anonymizer
 
 ## Overview
-Anonymizer tool for radiological reports and other similar medical texts. Anonymizes sensitive information (names, emails, dates, and Finnish social security numbers).
+Anonymization tool for radiology reports and other medical texts. Anonymizes sensitive information (names, emails, dates, and Finnish social security numbers).
 
 e.g. 
 *"Vertailussa 1.1.2020 otetut kuvat. Rintarangassa näkyy osteoporoottinen kompressiomurtuma. Sitä ei näkynyt vielä 1/2020 kuvassa. Matti Meikäläinen, rad.el."*
