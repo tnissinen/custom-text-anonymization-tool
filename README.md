@@ -1,4 +1,4 @@
-# rad_nlp_anonymizer
+# Anonymization tool (customized version)
 
 ## Overview
 Anonymization tool for radiology reports and other medical texts. Anonymizes sensitive information (names, emails, dates, and Finnish social security numbers).
